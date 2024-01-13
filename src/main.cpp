@@ -20,7 +20,25 @@ geometry_msgs::Point32 polarToCart(double angle, double range) {
 bool goodAngle(double angle, double ref_angle, double epsilon) {
     angle = atan2(sin(angle), cos(angle));
     ref_angle = atan2(sin(ref_angle), cos(ref_angle));
-    return abs(angle-ref_angle) < epsilon/2;
+    if(abs(angle-ref_angle) < epsilon) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+geometry_msgs::Point32 avaragePoint(std::vector<geometry_msgs::Point32>& points) {
+    float x=0, y=0, z=0;
+    for(size_t i=0; i<points.size(); ++i) {
+        x += points[i].x;
+        y += points[i].y;
+        z += points[i].z;
+    }
+    geometry_msgs::Point32 output;
+    output.x = x/points.size();
+    output.y = y/points.size();
+    output.z = z/points.size();
+    return output;
 }
 
 void laserCallback(const sensor_msgs::LaserScan &msg) {
@@ -30,28 +48,37 @@ void laserCallback(const sensor_msgs::LaserScan &msg) {
     sensor_msgs::PointCloud sonar_cloud;
     sonar_cloud.header.frame_id = "husarion/sonar_link";
     sonar_cloud.header.stamp = ros::Time::now();
-    geometry_msgs::Point32 p0, p1, p2, p3, p4, p5, p6, p7;
-    for (const auto &range : msg.ranges) {
-        if (goodAngle(angle, a0, angle_increment)) {
-            p7 = polarToCart(angle, range);
-        } else if (goodAngle(angle, a1, angle_increment)) {
-            p0 = polarToCart(angle, range);
-        } else if (goodAngle(angle, a2, angle_increment)) {
-            p1 = polarToCart(angle, range);
-        } else if (goodAngle(angle, a3, angle_increment)) {
-            p2 = polarToCart(angle, range);
-        } else if (goodAngle(angle, -a3, angle_increment)) {
-            p3 = polarToCart(angle, range);
-        } else if (goodAngle(angle, -a2, angle_increment)) {
-            p4 = polarToCart(angle, range);
-        } else if (goodAngle(angle, -a1, angle_increment)) {
-            p5 = polarToCart(angle, range);
-        } else if (goodAngle(angle, -a0, angle_increment)) {
-            p6 = polarToCart(angle, range);
+    double epsilon = 1.5*angle_increment;
+    std::vector<geometry_msgs::Point32> p0s, p1s, p2s, p3s, p4s, p5s, p6s, p7s;
+    for (size_t i=0; i<msg.ranges.size(); ++i) {
+        double range = msg.ranges[i];
+        if (goodAngle(angle, a0, epsilon)) {
+            p7s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, a1, epsilon)) {
+            p0s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, a2, epsilon)) {
+            p1s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, a3, epsilon)) {
+            p2s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, -a3, epsilon)) {
+            p3s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, -a2, epsilon)) {
+            p4s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, -a1, epsilon)) {
+            p5s.push_back(polarToCart(angle, range));
+        } else if (goodAngle(angle, -a0, epsilon)) {
+            p6s.push_back(polarToCart(angle, range));
         }
         angle += angle_increment;
     }
-    sonar_cloud.points = {p0, p1, p2, p3, p4, p5, p6, p7};
+    sonar_cloud.points.push_back(avaragePoint(p0s));
+    sonar_cloud.points.push_back(avaragePoint(p1s));
+    sonar_cloud.points.push_back(avaragePoint(p2s));
+    sonar_cloud.points.push_back(avaragePoint(p3s));
+    sonar_cloud.points.push_back(avaragePoint(p4s));
+    sonar_cloud.points.push_back(avaragePoint(p5s));
+    sonar_cloud.points.push_back(avaragePoint(p6s));
+    sonar_cloud.points.push_back(avaragePoint(p7s));
     sonar_pub.publish(sonar_cloud);
 }
 
