@@ -5,6 +5,8 @@
 
 ros::Publisher sonar_pub;
 
+using namespace std;
+
 double to_rad(double degrees) {
     return degrees*M_PI/180;
 }
@@ -29,6 +31,9 @@ bool goodAngle(double angle, double ref_angle, double epsilon) {
 
 geometry_msgs::Point32 avaragePoint(std::vector<geometry_msgs::Point32>& points) {
     float x=0, y=0, z=0;
+    if(points.size()==0) {
+        return geometry_msgs::Point32();
+    }
     for(size_t i=0; i<points.size(); ++i) {
         x += points[i].x;
         y += points[i].y;
@@ -50,8 +55,11 @@ void laserCallback(const sensor_msgs::LaserScan &msg) {
     sonar_cloud.header.stamp = ros::Time::now();
     double epsilon = 1.5*angle_increment;
     std::vector<geometry_msgs::Point32> p0s, p1s, p2s, p3s, p4s, p5s, p6s, p7s;
-    for (size_t i=0; i<msg.ranges.size(); ++i) {
+    for (size_t i=0; i<msg.ranges.size(); ++i, angle+=angle_increment) {
         double range = msg.ranges[i];
+        if(range > msg.range_max) {
+            continue;
+        }
         if (goodAngle(angle, a0, epsilon)) {
             p7s.push_back(polarToCart(angle, range));
         } else if (goodAngle(angle, a1, epsilon)) {
@@ -69,7 +77,6 @@ void laserCallback(const sensor_msgs::LaserScan &msg) {
         } else if (goodAngle(angle, -a0, epsilon)) {
             p6s.push_back(polarToCart(angle, range));
         }
-        angle += angle_increment;
     }
     sonar_cloud.points.push_back(avaragePoint(p0s));
     sonar_cloud.points.push_back(avaragePoint(p1s));
@@ -86,7 +93,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "laser_to_sonar");
     ros::NodeHandle n;
     ros::Rate rate(30);
-    ros::Subscriber laser_sub = n.subscribe("/base_scan", 10, &laserCallback);
+    ros::Subscriber laser_sub = n.subscribe("/scan", 10, &laserCallback);
     sonar_pub = n.advertise<sensor_msgs::PointCloud>("/husarion/sonar", 10);
 
     ros::Duration(1).sleep();
