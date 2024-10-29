@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
     ros::NodeHandle n;
     ros::Rate rate(30);
     ros::Subscriber laser_sub = n.subscribe("/base_scan", 10, &laserCallback);
-    sonar_pub = n.advertise<sensor_msgs::PointCloud>("/husarion/sonar", 10);
+    sonar_pub = n.advertise<sensor_msgs::PointCloud>("/base_laser_link", 10);
 
     ros::Duration(1).sleep();
     while(ros::ok()) {
