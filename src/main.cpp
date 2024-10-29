@@ -51,7 +51,7 @@ void laserCallback(const sensor_msgs::LaserScan &msg) {
     double angle_increment = msg.angle_increment;
     double a0 = to_rad(144), a1 = to_rad(90), a2 = to_rad(44), a3=to_rad(12);
     sensor_msgs::PointCloud sonar_cloud;
-    sonar_cloud.header.frame_id = "/base_laser_link";
+    sonar_cloud.header.frame_id = "base_laser_link";
     sonar_cloud.header.stamp = ros::Time::now();
     double epsilon = 1.5*angle_increment;
     std::vector<geometry_msgs::Point32> p0s, p1s, p2s, p3s, p4s, p5s, p6s, p7s;
